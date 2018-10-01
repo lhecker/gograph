@@ -1,7 +1,9 @@
 # gograph [![godoc](https://img.shields.io/badge/godoc-reference-blue.svg?longCache=true&style=flat)](https://godoc.org/github.com/lhecker/gograph)
 
 <p align="center">
-    <img title="In $CURRENT_YEAR you need a title image for your project. Here's mine." src="https://imgs.xkcd.com/comics/standards.png"/>
+    <a href="https://xkcd.com/927/" title="In $CURRENT_YEAR you need a title image for your project. Here's mine.">
+        <img src="https://imgs.xkcd.com/comics/standards.png" alt="" width="500" height="283" decoding="async"/>
+    </a>
 </p>
 
 ---
