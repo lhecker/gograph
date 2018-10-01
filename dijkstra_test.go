@@ -25,7 +25,7 @@ func TestBasic(t *testing.T) {
 	graph.AddArc(NewSimpleArc(3, 4, 6))
 	graph.AddArc(NewSimpleArc(4, 5, 9))
 
-	path, _ := Dijkstra(graph, 0, 4)
+	path := Dijkstra(graph, 0, 4)
 
 	if !reflect.DeepEqual(path, []ID{0, 2, 3, 4}) {
 		t.Fatalf("invalid path: %v", path)

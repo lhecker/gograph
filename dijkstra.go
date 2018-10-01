@@ -46,12 +46,12 @@ type dijkstraVertexData struct {
 	Visited  bool
 }
 
-func Dijkstra(graph *Graph, source ID, target ID) ([]ID, []Arc) {
+func Dijkstra(graph *Graph, source ID, target ID) []ID {
 	if _, ok := graph.vertices[source]; !ok {
-		return nil, nil
+		return nil
 	}
 	if _, ok := graph.vertices[target]; !ok {
-		return nil, nil
+		return nil
 	}
 
 	vertexData := map[ID]*dijkstraVertexData{
@@ -122,7 +122,7 @@ func Dijkstra(graph *Graph, source ID, target ID) ([]ID, []Arc) {
 	}
 
 	if path == nil {
-		return nil, nil
+		return nil
 	}
 
 	path = append(path, source)
@@ -131,5 +131,5 @@ func Dijkstra(graph *Graph, source ID, target ID) ([]ID, []Arc) {
 		path[left], path[right] = path[right], path[left]
 	}
 
-	return path, nil
+	return path
 }
