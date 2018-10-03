@@ -74,7 +74,7 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 	}
 
 	root := state[target]
-	if math.IsInf(root.Distance, 1) {
+	if math.IsInf(root.Distance, 1) || root.Previous == nil {
 		return nil
 	}
 
