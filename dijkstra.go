@@ -1,49 +1,15 @@
 package gograph
 
-import (
-	"container/heap"
-)
-
 const (
 	maxInt = int(^uint(0) >> 1)
 )
 
-type dijkstraDistance struct {
-	ID       ID
-	Distance int
-}
-
-type dijkstraDistanceHeap []dijkstraDistance
-
-func (h dijkstraDistanceHeap) Len() int           { return len(h) }
-func (h dijkstraDistanceHeap) Less(i, j int) bool { return h[i].Distance < h[j].Distance }
-func (h dijkstraDistanceHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-func (h *dijkstraDistanceHeap) Push(x interface{}) {
-	*h = append(*h, x.(dijkstraDistance))
-}
-
-func (h *dijkstraDistanceHeap) Pop() interface{} {
-	idx := len(*h) - 1
-	tail := (*h)[idx]
-	*h = (*h)[:idx]
-	return tail
-}
-
-func (h *dijkstraDistanceHeap) updateDistance(id ID, val int) {
-	for i := 0; i < len(*h); i++ {
-		if (*h)[i].ID == id {
-			(*h)[i].Distance = val
-			heap.Fix(h, i)
-			break
-		}
-	}
-}
-
-type dijkstraVertexData struct {
-	Previous ID
-	Distance int
-	Visited  bool
+type dijkstraState struct {
+	ID        ID
+	Previous  *dijkstraState
+	Distance  int
+	HeapIndex int
+	Visited   bool
 }
 
 func Dijkstra(graph *Graph, source ID, target ID) []ID {
@@ -54,45 +20,39 @@ func Dijkstra(graph *Graph, source ID, target ID) []ID {
 		return nil
 	}
 
-	vertexData := map[ID]*dijkstraVertexData{
-		source: {
-			Distance: 0,
-		},
-	}
+	vertexData := make(map[ID]*dijkstraState, len(graph.vertices))
+	Q := make(dijkstraHeap, 0, len(graph.vertices))
 
-	Q := make(dijkstraDistanceHeap, 0, len(graph.vertices))
-	Q = append(Q, dijkstraDistance{
+	sourceData := &dijkstraState{
 		ID:       source,
 		Distance: 0,
-	})
+	}
+	vertexData[source] = sourceData
+	Q.PushMaximum(sourceData)
 
 	for id := range graph.vertices {
 		if id == source {
 			continue
 		}
 
-		vertexData[id] = &dijkstraVertexData{
-			Distance: maxInt,
-		}
-
-		Q = append(Q, dijkstraDistance{
+		data := &dijkstraState{
 			ID:       id,
 			Distance: maxInt,
-		})
+		}
+		vertexData[id] = data
+		Q.PushMaximum(data)
 	}
 
-	for Q.Len() != 0 {
-		u := heap.Pop(&Q).(dijkstraDistance)
-		if u.ID == target {
+	for len(Q) != 0 {
+		udata := Q.Pop()
+		if udata.ID == target {
 			break
 		}
 
-		udata := vertexData[u.ID]
 		distance := udata.Distance
-
 		udata.Visited = true
 
-		for v, arc := range graph.arcs[u.ID] {
+		for v, arc := range graph.arcs[udata.ID] {
 			vdata := vertexData[v]
 			if vdata.Visited {
 				continue
@@ -102,33 +62,28 @@ func Dijkstra(graph *Graph, source ID, target ID) []ID {
 
 			if alt < vdata.Distance {
 				vdata.Distance = alt
-				vdata.Previous = u.ID
-				Q.updateDistance(v, alt)
+				vdata.Previous = udata
+				Q.Fix(vdata)
 			}
 		}
 	}
 
-	path := []ID(nil)
-	id := target
-
-	for {
-		udata := vertexData[id]
-		if udata.Previous == nil {
-			break
-		}
-
-		path = append(path, id)
-		id = udata.Previous
-	}
-
-	if path == nil {
+	root := vertexData[target]
+	if root.Distance == maxInt {
 		return nil
 	}
 
-	path = append(path, source)
+	pathLength := 0
+	for data := root; data != nil; data = data.Previous {
+		pathLength++
+	}
 
-	for left, right := 0, len(path)-1; left < right; left, right = left+1, right-1 {
-		path[left], path[right] = path[right], path[left]
+	path := make([]ID, pathLength)
+	idx := pathLength - 1
+
+	for data := root; data != nil; data = data.Previous {
+		path[idx] = data.ID
+		idx--
 	}
 
 	return path
