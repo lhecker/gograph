@@ -17,7 +17,7 @@ type Node interface {
 type Arc interface {
 	GraphSourceID() ID
 	GraphTargetID() ID
-	Weight() int
+	Weight() float64
 }
 
 type BuiltinGraph struct {
@@ -86,10 +86,10 @@ func (v *BuiltinNode) GraphID() ID {
 type BuiltinArc struct {
 	source ID
 	target ID
-	weight int
+	weight float64
 }
 
-func NewArc(source ID, target ID, weight int) *BuiltinArc {
+func NewArc(source ID, target ID, weight float64) *BuiltinArc {
 	return &BuiltinArc{
 		source: source,
 		target: target,
@@ -105,6 +105,6 @@ func (e *BuiltinArc) GraphTargetID() ID {
 	return e.target
 }
 
-func (e *BuiltinArc) Weight() int {
+func (e *BuiltinArc) Weight() float64 {
 	return e.weight
 }

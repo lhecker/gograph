@@ -1,13 +1,15 @@
 package gograph
 
-const (
-	maxInt = int(^uint(0) >> 1)
+import "math"
+
+var (
+	infinity = math.Inf(1)
 )
 
 type dijkstraState struct {
 	ID        ID
 	Previous  *dijkstraState
-	Distance  int
+	Distance  float64
 	HeapIndex int
 	Visited   bool
 }
@@ -40,7 +42,7 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 
 		data := &dijkstraState{
 			ID:       id,
-			Distance: maxInt,
+			Distance: infinity,
 		}
 		state[id] = data
 		Q.PushMaximum(data)
@@ -72,7 +74,7 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 	}
 
 	root := state[target]
-	if root.Distance == maxInt {
+	if math.IsInf(root.Distance, 1) {
 		return nil
 	}
 
