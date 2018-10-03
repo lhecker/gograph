@@ -2,27 +2,61 @@ package gograph
 
 type ID interface{}
 
-type Graph struct {
-	vertices map[ID]Vertex
-	arcs     map[ID]map[ID]Arc
+type DirectedGraph interface {
+	GetNodes() map[ID]Node
+	GetNode(id ID) Node
+
+	GetArcs() map[ID]map[ID]Arc
+	GetArc(source ID, target ID) Arc
 }
 
-func NewGraph() *Graph {
-	return &Graph{
-		vertices: map[ID]Vertex{},
-		arcs:     map[ID]map[ID]Arc{},
+type Node interface {
+	GraphID() ID
+}
+
+type Arc interface {
+	GraphSourceID() ID
+	GraphTargetID() ID
+	Weight() int
+}
+
+type BuiltinGraph struct {
+	nodes map[ID]Node
+	arcs  map[ID]map[ID]Arc
+}
+
+func NewDirectedGraph() *BuiltinGraph {
+	return &BuiltinGraph{
+		nodes: map[ID]Node{},
+		arcs:  map[ID]map[ID]Arc{},
 	}
 }
 
-func (g *Graph) AddVertex(vertex Vertex) {
-	g.vertices[vertex.GraphID()] = vertex
+func (g *BuiltinGraph) GetNodes() map[ID]Node {
+	return g.nodes
 }
 
-func (g *Graph) GetVertex(id ID) Vertex {
-	return g.vertices[id]
+func (g *BuiltinGraph) GetNode(id ID) Node {
+	return g.nodes[id]
 }
 
-func (g *Graph) AddArc(arc Arc) {
+func (g *BuiltinGraph) GetArcs() map[ID]map[ID]Arc {
+	return g.arcs
+}
+
+func (g *BuiltinGraph) GetArc(source ID, target ID) Arc {
+	m := g.arcs[source]
+	if m != nil {
+		return m[target]
+	}
+	return nil
+}
+
+func (g *BuiltinGraph) AddNode(node Node) {
+	g.nodes[node.GraphID()] = node
+}
+
+func (g *BuiltinGraph) AddArc(arc Arc) {
 	source := arc.GraphSourceID()
 	target := arc.GraphTargetID()
 
@@ -35,60 +69,42 @@ func (g *Graph) AddArc(arc Arc) {
 	m[target] = arc
 }
 
-func (g *Graph) GetArc(source ID, target ID) Arc {
-	m := g.arcs[source]
-	if m != nil {
-		return m[target]
-	}
-	return nil
-}
-
-type Vertex interface {
-	GraphID() ID
-}
-
-type simpleVertex struct {
+type BuiltinNode struct {
 	id ID
 }
 
-func NewSimpleVertex(id ID) Vertex {
-	return &simpleVertex{
+func NewNode(id ID) *BuiltinNode {
+	return &BuiltinNode{
 		id: id,
 	}
 }
 
-func (v *simpleVertex) GraphID() ID {
+func (v *BuiltinNode) GraphID() ID {
 	return v.id
 }
 
-type Arc interface {
-	GraphSourceID() ID
-	GraphTargetID() ID
-	Weight() int
-}
-
-type simpleArc struct {
+type BuiltinArc struct {
 	source ID
 	target ID
 	weight int
 }
 
-func NewSimpleArc(source ID, target ID, weight int) Arc {
-	return &simpleArc{
+func NewArc(source ID, target ID, weight int) *BuiltinArc {
+	return &BuiltinArc{
 		source: source,
 		target: target,
 		weight: weight,
 	}
 }
 
-func (e *simpleArc) GraphSourceID() ID {
+func (e *BuiltinArc) GraphSourceID() ID {
 	return e.source
 }
 
-func (e *simpleArc) GraphTargetID() ID {
+func (e *BuiltinArc) GraphTargetID() ID {
 	return e.target
 }
 
-func (e *simpleArc) Weight() int {
+func (e *BuiltinArc) Weight() int {
 	return e.weight
 }

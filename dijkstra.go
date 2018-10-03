@@ -12,25 +12,28 @@ type dijkstraState struct {
 	Visited   bool
 }
 
-func Dijkstra(graph *Graph, source ID, target ID) []ID {
-	if _, ok := graph.vertices[source]; !ok {
+func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
+	nodes := graph.GetNodes()
+	arcs := graph.GetArcs()
+
+	if _, ok := nodes[source]; !ok {
 		return nil
 	}
-	if _, ok := graph.vertices[target]; !ok {
+	if _, ok := nodes[target]; !ok {
 		return nil
 	}
 
-	vertexData := make(map[ID]*dijkstraState, len(graph.vertices))
-	Q := make(dijkstraHeap, 0, len(graph.vertices))
+	state := make(map[ID]*dijkstraState, len(nodes))
+	Q := make(dijkstraHeap, 0, len(nodes))
 
 	sourceData := &dijkstraState{
 		ID:       source,
 		Distance: 0,
 	}
-	vertexData[source] = sourceData
+	state[source] = sourceData
 	Q.PushMaximum(sourceData)
 
-	for id := range graph.vertices {
+	for id := range nodes {
 		if id == source {
 			continue
 		}
@@ -39,7 +42,7 @@ func Dijkstra(graph *Graph, source ID, target ID) []ID {
 			ID:       id,
 			Distance: maxInt,
 		}
-		vertexData[id] = data
+		state[id] = data
 		Q.PushMaximum(data)
 	}
 
@@ -52,8 +55,8 @@ func Dijkstra(graph *Graph, source ID, target ID) []ID {
 		distance := udata.Distance
 		udata.Visited = true
 
-		for v, arc := range graph.arcs[udata.ID] {
-			vdata := vertexData[v]
+		for v, arc := range arcs[udata.ID] {
+			vdata := state[v]
 			if vdata.Visited {
 				continue
 			}
@@ -68,7 +71,7 @@ func Dijkstra(graph *Graph, source ID, target ID) []ID {
 		}
 	}
 
-	root := vertexData[target]
+	root := state[target]
 	if root.Distance == maxInt {
 		return nil
 	}
