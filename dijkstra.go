@@ -1,6 +1,10 @@
 package gograph
 
-import "math"
+import (
+	"fmt"
+	"math"
+	"strconv"
+)
 
 var (
 	infinity = math.Inf(1)
@@ -14,15 +18,50 @@ type dijkstraState struct {
 	Visited   bool
 }
 
-func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
+type DijkstraUnreachableError struct {
+	SourceID ID
+	TargetID ID
+}
+
+func (s *DijkstraUnreachableError) Error() string {
+	return fmt.Sprintf("no path found for %v -> %v", s.SourceID, s.TargetID)
+}
+
+type DijkstraUnknownNodeError struct {
+	NodeID ID
+}
+
+func (s *DijkstraUnknownNodeError) Error() string {
+	return fmt.Sprintf("unknown node %v", s.NodeID)
+}
+
+type DijkstraNegativeWeightError struct {
+	SourceID ID
+	TargetID ID
+	Weight   float64
+}
+
+func (s *DijkstraNegativeWeightError) Error() string {
+	return fmt.Sprintf("negative weight %s on arc %v -> %v",
+		strconv.FormatFloat(s.Weight, 'g', -1, 64),
+		s.SourceID,
+		s.TargetID,
+	)
+}
+
+func Dijkstra(graph DirectedGraph, source ID, target ID) ([]ID, float64, error) {
 	nodes := graph.GetNodes()
 	arcs := graph.GetArcs()
 
 	if _, ok := nodes[source]; !ok {
-		return nil
+		return nil, infinity, &DijkstraUnknownNodeError{
+			NodeID: source,
+		}
 	}
 	if _, ok := nodes[target]; !ok {
-		return nil
+		return nil, infinity, &DijkstraUnknownNodeError{
+			NodeID: target,
+		}
 	}
 
 	state := make(map[ID]*dijkstraState, len(nodes))
@@ -59,11 +98,25 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 
 		for v, arc := range arcs[udata.ID] {
 			vdata := state[v]
+			if vdata == nil {
+				return nil, infinity, &DijkstraUnknownNodeError{
+					NodeID: v,
+				}
+			}
 			if vdata.Visited {
 				continue
 			}
 
-			alt := distance + arc.Weight()
+			weight := arc.Weight()
+			if weight < 0 {
+				return nil, infinity, &DijkstraNegativeWeightError{
+					SourceID: udata.ID,
+					TargetID: v,
+					Weight:   weight,
+				}
+			}
+
+			alt := distance + weight
 
 			if alt < vdata.Distance {
 				vdata.Distance = alt
@@ -74,8 +127,14 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 	}
 
 	root := state[target]
-	if math.IsInf(root.Distance, 1) || root.Previous == nil {
-		return nil
+	if math.IsInf(root.Distance, 1) {
+		return nil, infinity, &DijkstraUnreachableError{
+			SourceID: source,
+			TargetID: target,
+		}
+	}
+	if root.Previous == nil {
+		return nil, 0, nil
 	}
 
 	pathLength := 0
@@ -91,5 +150,5 @@ func Dijkstra(graph DirectedGraph, source ID, target ID) []ID {
 		idx--
 	}
 
-	return path
+	return path, root.Distance, nil
 }

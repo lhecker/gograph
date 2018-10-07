@@ -1,33 +1,123 @@
 package gograph
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNumericRosettacode(t *testing.T) {
+func TestDijkstraUnreachableError(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(2))
+
+	path, distance, err := Dijkstra(graph, 1, 2)
+	assert.EqualError(err, "no path found for 1 -> 2")
+	assert.Equal(infinity, distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraUnknownNodeErrorForSource(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(2))
+
+	path, distance, err := Dijkstra(graph, 9, 5)
+	assert.EqualError(err, "unknown node 9")
+	assert.Equal(infinity, distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraUnknownNodeErrorForTarget(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(2))
+
+	path, distance, err := Dijkstra(graph, 1, 9)
+	assert.EqualError(err, "unknown node 9")
+	assert.Equal(infinity, distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraUnknownNodeErrorForArcs(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(3))
+	graph.AddArc(NewArc(1, 2, 1))
+	graph.AddArc(NewArc(2, 3, 1))
+
+	path, distance, err := Dijkstra(graph, 1, 3)
+	assert.EqualError(err, "unknown node 2")
+	assert.Equal(infinity, distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraNegativeWeightError(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(2))
+	graph.AddArc(NewArc(1, 2, -1))
+
+	path, distance, err := Dijkstra(graph, 1, 2)
+	assert.EqualError(err, "negative weight -1 on arc 1 -> 2")
+	assert.Equal(infinity, distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraWhenSourceIsTarget(t *testing.T) {
+	assert := assert.New(t)
+
+	graph := NewDirectedGraph()
+	graph.AddNode(NewNode(1))
+	graph.AddNode(NewNode(2))
+	graph.AddArc(NewArc(1, 1, 1))
+	graph.AddArc(NewArc(1, 2, 1))
+	graph.AddArc(NewArc(2, 1, 1))
+
+	path, distance, err := Dijkstra(graph, 1, 1)
+	assert.NoError(err)
+	assert.Zero(distance)
+	assert.Empty(path)
+}
+
+func TestDijkstraWithNumericRosettacode(t *testing.T) {
+	assert := assert.New(t)
 	graph := numericRosettacodeGraph()
-	path := Dijkstra(graph, 1, 5)
 
-	if !reflect.DeepEqual(path, []ID{1, 3, 4, 5}) {
-		t.Fatalf("invalid path: %v", path)
+	path, distance, err := Dijkstra(graph, 1, 5)
+	if assert.NoError(err) {
+		assert.Equal(26.0, distance)
+		assert.EqualValues(path, []ID{1, 3, 4, 5})
 	}
 }
 
-func TestAlphabeticalRosettacode(t *testing.T) {
+func TestDijkstraWithAlphabeticalRosettacode(t *testing.T) {
+	assert := assert.New(t)
 	graph := alphabeticalRosettacodeGraph()
-	path := Dijkstra(graph, "a", "e")
 
-	if !reflect.DeepEqual(path, []ID{"a", "c", "d", "e"}) {
-		t.Fatalf("invalid path: %v", path)
+	path, distance, err := Dijkstra(graph, "a", "e")
+	if assert.NoError(err) {
+		assert.Equal(26.0, distance)
+		assert.EqualValues(path, []ID{"a", "c", "d", "e"})
 	}
 }
 
-func TestGonumSuite(t *testing.T) {
+func TestDijkstraWithGonumSuite(t *testing.T) {
 	for _, test := range ShortestPathTests {
 		test := test
 
 		t.Run(test.Name, func(t *testing.T) {
+			assert := assert.New(t)
 			graph := NewDirectedGraph()
 
 			for _, arc := range test.Arcs {
@@ -36,24 +126,18 @@ func TestGonumSuite(t *testing.T) {
 				graph.AddArc(arc)
 			}
 
-			path := Dijkstra(graph, test.NoPathFor.GraphSourceID(), test.NoPathFor.GraphTargetID())
-			if len(path) != 0 {
-				t.Errorf("expected no path, but found: %v", path)
-				return
-			}
+			path, distance, err := Dijkstra(graph, test.NoPathFor.GraphSourceID(), test.NoPathFor.GraphTargetID())
+			assert.Error(err)
+			assert.Equal(infinity, distance)
+			assert.Empty(path)
 
-			path = Dijkstra(graph, test.Query.GraphSourceID(), test.Query.GraphTargetID())
-			ok := len(test.WantPaths) == 0 && len(path) == 0
-
-			for _, expectedPath := range test.WantPaths {
-				if reflect.DeepEqual(path, expectedPath) {
-					ok = true
-					break
+			path, _, err = Dijkstra(graph, test.Query.GraphSourceID(), test.Query.GraphTargetID())
+			if assert.NoError(err) {
+				if len(test.WantPaths) == 0 {
+					assert.Empty(path)
+				} else {
+					assert.Contains(test.WantPaths, path)
 				}
-			}
-
-			if !ok {
-				t.Errorf("got %v, but expected either one of these: %v", path, test.WantPaths)
 			}
 		})
 	}
@@ -64,7 +148,7 @@ func BenchmarkNumericRosettacode(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		Dijkstra(graph, 1, 5)
+		_, _, _ = Dijkstra(graph, 1, 5)
 	}
 }
 

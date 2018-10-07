@@ -13,17 +13,6 @@ var ShortestPathTests = []struct {
 	NoPathFor Arc
 	WantPaths [][]ID
 }{
-	// Positive weighted graphs.
-	{
-		Name:      "empty directed",
-		NoPathFor: NewArc(0, 1, 0),
-		Query:     NewArc(0, 1, 0),
-	},
-	{
-		Name:      "empty undirected",
-		NoPathFor: NewArc(0, 1, 0),
-		Query:     NewArc(0, 1, 0),
-	},
 	{
 		Name: "one edge directed",
 		Arcs: []Arc{
